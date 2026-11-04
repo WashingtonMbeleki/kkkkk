@@ -1,0 +1,7 @@
+za/co/wethinkcode/courier/dispatch/ParcelTypesTest.class
+za/co/wethinkcode/courier/dispatch/InsurableTest.class
+za/co/wethinkcode/courier/dispatch/Types.class
+za/co/wethinkcode/courier/service/DeliveryRulesServiceTest.class
+za/co/wethinkcode/courier/DatabaseSchemaTest.class
+za/co/wethinkcode/courier/dispatch/ParcelTest.class
+za/co/wethinkcode/courier/dispatch/DispatchCentreTest.class

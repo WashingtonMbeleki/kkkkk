@@ -1,0 +1,167 @@
+DO NOT CHANGE THE FORMAT -- DO NOT CREATE A NEW txt file
+
+=== Question 1.1 ===
+Waterfall is a phased, sequential model: requirements are frozen up front, then design, build, test, and release happen in fixed stages. Agile is time-boxed delivery in short iterations: the team works in small slices, keeps the product releasable, and re-prioritises as feedback arrives.
+
+Salesforce's problems were the classic signs of a phase-based process growing too large: long lead times, late discovery of problems, smaller and less predictable releases, and difficulty forecasting what would be in a release. When an organisation scales, large upstream decisions become stale, dependencies pile up, and testing is delayed until the end. Short time-boxed iterations reduce this by forcing regular review, faster feedback, and smaller batches of work that can be planned, built, and checked quickly. That makes delivery more predictable and keeps the product releasable.
+
+=== Question 1.2 ===
+I would set a basic operating process with a few guardrails:
+
+1. A backlog with clear work items and priorities. Each item has an owner, brief description, acceptance criteria, and status. This prevents work being picked up informally or disappearing into “someone is doing it.”
+2. A time-boxed sprint or iteration with a planning session at the start and a review/demo at the end. This creates a repeatable rhythm so the team agrees what is in scope, what is not, and what “done” looks like.
+3. Daily stand-up. Each developer states what they completed yesterday, what they are doing today, and any blockers. This prevents confusion, duplicated work, and hidden risks from surfacing too late.
+4. Definition of Done. A work item is not complete until it is coded, tested, reviewed, and integrated. This prevents partially finished work from being counted as done.
+5. Visible workflow board (requested → in progress → review → done). This gives the team a single view of every piece of work from request to completion and makes progress and bottlenecks obvious.
+6. Sprint review and retrospective. The team reviews business value and the process itself. This prevents the same mistakes repeating and ensures the team learns and improves.
+
+Together these guardrails create a repeatable process, make ownership clear, and give managers and developers a live picture of work from request to release.
+
+=== Question 1.3 ===
+A daily stand-up is a short operational meeting. It happens daily, usually at the start of the day, and focuses on progress, upcoming work, and blockers. It is meant to coordinate the team and remove immediate obstacles.
+
+A sprint retrospective is a learning meeting held at the end of a sprint or iteration. It focuses on the team’s process: what went well, what went badly, and what to improve next time. It produces actions for improvement, not task status. The stand-up produces coordination; the retrospective produces learning and process change.
+
+=== Question 2.2 ===
+Encapsulation: Keep fields and internal state private and expose controlled operations. In the dispatch package, `Parcel` declares private fields such as `trackingNumber`, `senderName`, `recipientAddress`, `weightKg`, and `delivered`, and exposes getter/setter-style methods. This is encapsulation because callers cannot mutate state directly; the class controls validation and access.
+
+Inheritance: A subclass extends a parent and reuses its behaviour while adding its own. `StandardParcel`, `ExpressParcel`, and `FragileParcel` all extend `Parcel`, which is the common base class. They inherit the parcel identity and validation logic and provide their own behaviour.
+
+Abstraction: Hide unnecessary detail behind a common contract and use abstract concepts. `Parcel` is abstract and declares abstract methods `deliveryFee()`, `deliveryDays()`, and `serviceLevel()`. The subclasses implement those behaviour contracts without callers needing to know which parcel type they hold.
+
+Polymorphism: Different subclasses can be treated through the same type and respond differently to the same method call. In `DispatchCentre`, a `List<Parcel>` can hold `StandardParcel`, `ExpressParcel`, and `FragileParcel`, and each one implements `serviceLevel()` or `deliveryFee()` differently while still being a `Parcel`.
+
+=== Question 3.1 ===
+Refactoring is changing the internal structure of code to make it easier to understand, modify, and maintain without changing its observable behaviour. It is different from a bug fix because a bug fix changes behaviour to correct an error, and different from a feature because a feature adds new behaviour. In `DeliveryRulesService`, the `canLoadOntoVehicle` method has a long chain of conditions and nested logic. That makes it hard to read and reason about. I would refactor it by extracting helper checks such as “is vehicle capacity okay”, “is the driver certified for fragile loads”, and “is the driver allowed to collect cash”, so the overall rule becomes clearer without changing any outcome.
+
+=== Question 3.2 ===
+I would follow a red/green/refactor approach with a safety net of regression tests. First, I would define the current behaviour with tests for the existing rules. Then I would add a failing test for the new rule: a consignment over 30 kg cannot be loaded unless the driver is working with a second driver. After that, I would implement the new condition in the smallest possible step, run the tests, and only then refactor the code into clearer helper methods or predicates. This keeps behaviour safe because each step is verified against tests before the next change.
+
+For the 30 kg rule, the cycle would be:
+1. Write/confirm regression tests for current loading rules.
+2. Add the new failing test for over-30kg and no second driver.
+3. Implement the rule in `canLoadOntoVehicle` (or a helper method that it calls).
+4. Run the relevant test suite to confirm the new rule works and no old rule is broken.
+5. Refactor for clarity only after the tests stay green.
+6. Repeat and move on only when the tests pass and the behaviour is still unchanged for all earlier scenarios.
+
+=== Question 4.1.1 ===
+`-SNAPSHOT` means the build is a work-in-progress version, not a final released product. It is usually built from code that may still change and is not guaranteed to be stable. A snapshot should never be handed to customers because it may contain unfinished work, changing APIs, or undiscovered bugs; customers need a stable, tested release with a clear version contract.
+
+=== Question 4.1.2 ===
+No, releasing `1.4.0` would not be correct if the deprecated `DispatchClient.sendLegacy()` method is removed while a partner team still calls it. That is a breaking API change.
+
+- Rounding defect fixed: patch-level fix; this is compatible and could be part of a patch release.
+- New public method `estimateDeliveryDate(...)`: additive, non-breaking; this supports a minor release such as `1.4.0`.
+- Removing `DispatchClient.sendLegacy()`: breaking change because existing integrations still depend on it. That requires a major version bump, not a minor one. The safest version would be `2.0.0` if that removal is intentional. If compatibility must be preserved, the method should remain temporarily as a deprecated shim and be removed only in a major release.
+
+=== Question 4.2 ===
+The problem is the SQLite driver dependency in `pom.xml`. It was declared with `test` scope, which allows it to be on the test classpath, so `DatabaseSchemaTest` could connect to SQLite. But when the application was packaged into a runnable jar, Maven did not include the JDBC driver on the runtime classpath, so the jar crashed with a missing driver/class-not-found error. The fix is to remove the `scope` so the SQLite driver is on the application classpath for both testing and runtime.
+
+=== Question 4.3 ===
+The pipeline must run compile first, then test, then package because each step depends on the previous one. Code must compile before any tests can run, tests must pass before a build is considered releasable, and packaging should only happen after the software is validated. The order is: compile checks the project builds, test validates behaviour, then package creates the deliverable jar. This also keeps the pipeline deterministic and avoids shipping a broken artifact. In GitLab CI, I used jobs with `needs` so the stages run in order and the final jar is saved as an artifact.
+
+=== Question 4.4 ===
+`pom.xml` is Maven’s project configuration file. It tells Maven what the project is, which Java version to use, which dependencies to fetch, and how to build/package it. Without it, the team would need to manually compile code, resolve libraries, set compiler flags, and decide build steps on every machine and in the CI pipeline.
+
+In this project, two things the `pom.xml` defines are:
+1. The Java version and project metadata (`groupId`, `artifactId`, `version`, compiler release 17). Maven uses this to compile the project for the right Java version.
+2. Dependencies and plugins, including the SQLite JDBC driver and the assembly plugin that creates the runnable jar. Maven downloads the driver and packages the application into a jar-with-dependencies for distribution.
+
+=== Question 5.4 ===
+A `PRIMARY KEY` means “this column uniquely identifies each row, and it cannot be null.” A `UNIQUE` constraint means “no two rows can share that value,” but it is not necessarily the row’s identity column. For example, `tracking_no` must be unique among parcels, but the actual identity of the row is still the internal `id`.
+
+`delivery_attempts` references `parcels.id` rather than `parcels.tracking_no` because `id` is a stable internal identifier that does not change, while tracking numbers are business data and may be subject to rules or correction. Using the surrogate key makes the foreign key simpler, more efficient, and less brittle than depending on a business value that might change or be reformatted later.
+
+=== Question 6.1 ===
+1. `DeliveryRulesServiceTest` is a unit test. It creates model objects in memory and calls one method of `DeliveryRulesService` to check logic in isolation.
+2. `DatabaseSchemaTest` is an integration test. It opens a real SQLite database, runs the schema creation, and verifies the tables and constraints in the database layer.
+3. The operations release check is an acceptance or end-to-end/system test. It runs the packaged jar and verifies real business scenarios from the outside; it has no knowledge of the implementation details.
+
+The third check confirms that the shipped artifact works from the user/business perspective and that the system behaves correctly when all components are assembled together. The first two cannot guarantee that the packaged product satisfies business expectations in a real environment.
+
+=== Question 6.2.1 ===
+The intention of diagramming is to communicate structure, behaviour, and design clearly so that people can reason about the system without reading every line of code. Teams draw diagrams because they make dependencies, responsibilities, and flows visible, especially for large or evolving systems.
+
+=== Question 6.2.2 ===
+UML, or Unified Modeling Language, is a standard way to model software systems using a common set of diagram types. Its intention is to provide a shared visual language for describing structure, behaviour, and relationships among software parts.
+
+=== Question 6.2.3 ===
+A UML diagram is a graphical representation of a software design or system behaviour using UML notation. It summarises selected aspects of the system so developers can discuss, analyse, and document it.
+
+=== Question 6.2.4 ===
+A class diagram is a structural UML diagram. It shows classes, fields, methods, and relationships such as inheritance and composition. It helps answer: “What are the classes and how are they connected?”
+
+A sequence diagram is a behavioural UML diagram. It shows messages exchanged over time between participants. It helps answer: “What interactions happen, in what order, and between whom?”
+
+=== Question 6.3 ===
+UML class diagram (textual form):
+
++-------------------------+       1       * +---------------------------+
+| Consignment             |------------------>| DeliveryAttempt            |
+|-------------------------|                 |---------------------------|
+| - trackingNo: String    |                 | - attemptedAt: LocalDateTime |
+| - weightKg: double      |                 | - outcome: AttemptOutcome  |
+| - serviceLevel: ServiceLevel |              | - driverNote: String       |
+| - zone: String          |                 |---------------------------|
+| - fragile: boolean      |                 | + getAttemptedAt(): LocalDateTime |
+| - cashOnDelivery: boolean |               | + getOutcome(): AttemptOutcome |
+| - addressVerified: boolean |              | + getDriverNote(): String  |
+| - onHold: boolean       |                 | + toString(): String      |
+| - attempts: List<DeliveryAttempt> |       |                           |
+|-------------------------|                 |                           |
+| + getTrackingNo(): String |               |                           |
+| + getWeightKg(): double |                 |                           |
+| + getServiceLevel(): ServiceLevel |        |                           |
+| + getZone(): String     |                 |                           |
+| + recordAttempt(attempt: DeliveryAttempt): void |
+| + getAttempts(): List<DeliveryAttempt> |
+| + isDelivered(): boolean |
+| + toString(): String    |                 |                           |
++-------------------------+                 +---------------------------+
+
+The same one-to-many relationship is represented in Java by the `Consignment` object holding a list of `DeliveryAttempt` objects. In the database, the relationship is represented by the foreign key `delivery_attempts.parcel_id -> parcels.id`. The many side “holds” the relationship in the database because the `delivery_attempts` table has the foreign key. In the Java object model, the owning side is the `Consignment` because it contains the list of attempts.
+
+=== Question 7.1.1 ===
+The script should attach a click listener to the `<ul>` and, when the user clicks a list item, write `You chose <language>` into the paragraph with id `selection`.
+
+=== Question 7.1.2 ===
+The full lifecycle is:
+1. The browser requests `index.html` from the server using HTTP.
+2. The server returns the HTML document, including the link to the stylesheet and the `<script src="js/update.js" defer>` tag.
+3. The browser parses the HTML, builds the DOM, and downloads CSS and JavaScript. Because the script uses `defer`, it does not run until the HTML has been fully parsed.
+4. When the script runs, it finds the `<ul id="languages">` and the empty `<p id="selection">` elements.
+5. It attaches a click handler to the list.
+6. The user clicks “Python”. The click event bubbles to the `<ul>`.
+7. The handler reads the clicked `<li>` text, trims it, and sets `selection.textContent` to `You chose Python`.
+8. The browser updates the page and the message appears on screen.
+
+=== Question 7.2.1 ===
+An HTTP `GET` request asks the server for a resource; it is designed for safe, idempotent reads and usually includes data in the URL. An HTTP `POST` request sends data to the server to create, update, or authenticate something; it is the correct choice for a login form because the browser is sending credentials and the server is changing the user session state.
+
+=== Question 7.2.2 ===
+HTTP is stateless because each request is independent: the server does not automatically remember prior requests. WeShare can still know the student by creating a session after login and giving the browser a session identifier, usually via a cookie. The browser sends that cookie with later requests, so the server can associate the request with the same logged-in user and serve their expenses page.
+
+=== Question 7.2.3 ===
+Model: represents the data and business rules. In this journey, the model contains the student record and the list of expenses.
+View: renders the page to the user. In this journey, the view is the login page and the expenses page HTML.
+Controller: receives the request, calls the model, and decides which view or redirect to return. In this journey, the controller receives the login form submission, checks the email, loads the student’s data, creates the session, and then redirects to the expenses page.
+
+=== Question 7.2.4 ===
+The server redirects after a successful login so that it can do a proper authenticated flow: create the session, validate the user, and then send the browser to the correct authorised route. It separates the login action from the display of the private expenses page and keeps the app consistent and secure.
+
+=== Question 7.3.1 ===
+Server-side generation: the browser requests `/balances.html`, and the server fetches the account data, builds the full HTML page, and sends that HTML back. The work happens on the server, and the browser receives a complete page.
+
+Client-side generation: the browser requests a shell page, then JavaScript fetches the balance data from an API and uses it to build the page in the browser. The work happens partly in the browser, and the browser receives the shell page plus data (usually JSON) rather than the final HTML.
+
+=== Question 7.3.2 ===
+An API endpoint is a URL that the server exposes for programmatic data access. It usually returns JSON because JSON is a lightweight, language-neutral data format that JavaScript can parse easily and use to update the DOM without reloading the page.
+
+=== Question 7.3.3 ===
+Requirement 1, “refresh every 30 seconds without reloading the page,” is best met by the client-side approach, because JavaScript can poll the API and update the balances periodically.
+
+Requirement 2, “balances must still be shown with JavaScript switched off,” is best met by the server-side approach, because the page is already rendered on the server as HTML and can be shown without client-side scripting.
+
+Yes, there is a way to meet both: use a hybrid approach. Render the initial balances page on the server for non-JS users, then have a small JavaScript client fetch fresh JSON data every 30 seconds and update the page dynamically. This gives both accessibility and live updates.
+

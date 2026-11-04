@@ -1,0 +1,15 @@
+za/co/wethinkcode/courier/model/AttemptOutcome.class
+za/co/wethinkcode/courier/dispatch/Parcel.class
+za/co/wethinkcode/courier/model/DeliveryAttempt.class
+za/co/wethinkcode/courier/Database.class
+za/co/wethinkcode/courier/dispatch/StandardParcel.class
+za/co/wethinkcode/courier/Main.class
+za/co/wethinkcode/courier/dispatch/ExpressParcel.class
+za/co/wethinkcode/courier/model/Consignment.class
+za/co/wethinkcode/courier/DatabaseSchema.class
+za/co/wethinkcode/courier/service/DeliveryRulesService.class
+za/co/wethinkcode/courier/dispatch/FragileParcel.class
+za/co/wethinkcode/courier/dispatch/Insurable.class
+za/co/wethinkcode/courier/model/Driver.class
+za/co/wethinkcode/courier/model/ServiceLevel.class
+za/co/wethinkcode/courier/dispatch/DispatchCentre.class

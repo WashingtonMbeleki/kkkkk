@@ -1,0 +1,27 @@
+stages:
+  - compile
+  - test
+  - package
+
+compile:
+  stage: compile
+  script:
+    - make compile
+
+test:
+  stage: test
+  needs:
+    - compile
+  script:
+    - make test
+
+package:
+  stage: package
+  needs:
+    - test
+  script:
+    - make package
+  artifacts:
+    when: on_success
+    paths:
+      - target/courier-service-jar-with-dependencies.jar
